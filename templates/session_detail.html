@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Session Details - {{ session.evaluator_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Session Header -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2>
+                        <i data-feather="user" class="me-2"></i>
+                        {{ session.evaluator_name }}'s Evaluation Session
+                    </h2>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-secondary">Session #{{ session.id }}</span>
+                        {% if session.status == 'completed' %}
+                            <span class="badge bg-success">
+                                <i data-feather="check" style="width: 12px; height: 12px;"></i>
+                                Completed
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning">
+                                <i data-feather="clock" style="width: 12px; height: 12px;"></i>
+                                In Progress
+                            </span>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted mt-2 mb-0">
+                        Started: {{ session.created_at.strftime('%Y-%m-%d at %H:%M') }}
+                        {% if session.completed_at %}
+                            <br>Completed: {{ session.completed_at.strftime('%Y-%m-%d at %H:%M') }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="btn-group">
+                    {% if session.status == 'in_progress' %}
+                        <a href="{{ url_for('evaluate', session_id=session.id) }}" class="btn btn-primary">
+                            <i data-feather="play" class="me-2"></i>
+                            Continue Evaluation
+                        </a>
+                        <a href="{{ url_for('complete_session', session_id=session.id) }}" class="btn btn-success">
+                            <i data-feather="check" class="me-2"></i>
+                            Complete Session
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('export_session', session_id=session.id) }}" class="btn btn-outline-secondary">
+                        <i data-feather="download" class="me-2"></i>
+                        Export Data
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i data-feather="edit-3" class="text-primary mb-2" style="width: 32px; height: 32px;"></i>
+                    <h4 class="card-title">{{ total_evaluations }}</h4>
+                    <p class="card-text text-muted">Total Evaluations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i data-feather="star" class="text-warning mb-2" style="width: 32px; height: 32px;"></i>
+                    <h4 class="card-title">{{ "%.1f"|format(avg_rating) }}</h4>
+                    <p class="card-text text-muted">Average Rating</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i data-feather="alert-triangle" class="text-danger mb-2" style="width: 32px; height: 32px;"></i>
+                    <h4 class="card-title">{{ high_risk_count }}</h4>
+                    <p class="card-text text-muted">High Risk Items</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i data-feather="flag" class="text-info mb-2" style="width: 32px; height: 32px;"></i>
+                    <h4 class="card-title">{{ evaluations|selectattr('requires_revision', 'equalto', True)|list|length }}</h4>
+                    <p class="card-text text-muted">Need Revision</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluations List -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="list" class="me-2"></i>
+                        Evaluation Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if evaluations %}
+                        {% for evaluation in evaluations %}
+                        <div class="card mb-3 evaluation-card">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">
+                                            Evaluation #{{ evaluation.id }}
+                                            <span class="badge bg-secondary ms-2">{{ evaluation.llm_response.model_name }}</span>
+                                        </h6>
+                                        <small class="text-muted">{{ evaluation.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <!-- Risk Level Badge -->
+                                        {% if evaluation.risk_level == 'high' %}
+                                            <span class="badge bg-danger">
+                                                <i data-feather="alert-triangle" style="width: 12px; height: 12px;"></i>
+                                                High Risk
+                                            </span>
+                                        {% elif evaluation.risk_level == 'medium' %}
+                                            <span class="badge bg-warning">
+                                                <i data-feather="alert-circle" style="width: 12px; height: 12px;"></i>
+                                                Medium Risk
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">
+                                                <i data-feather="shield" style="width: 12px; height: 12px;"></i>
+                                                Low Risk
+                                            </span>
+                                        {% endif %}
+                                        
+                                        <!-- Overall Rating -->
+                                        <span class="badge bg-info">
+                                            <i data-feather="star" style="width: 12px; height: 12px;"></i>
+                                            {{ evaluation.overall_rating }}/5
+                                        </span>
+                                        
+                                        {% if evaluation.requires_revision %}
+                                            <span class="badge bg-warning">
+                                                <i data-feather="flag" style="width: 12px; height: 12px;"></i>
+                                                Needs Revision
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <!-- Prompt and Response -->
+                                    <div class="col-md-6">
+                                        <h6>Prompt:</h6>
+                                        <div class="p-2 bg-body-secondary rounded small">
+                                            {{ evaluation.llm_response.prompt }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Response:</h6>
+                                        <div class="p-2 bg-body-tertiary rounded small response-preview">
+                                            {{ evaluation.llm_response.response[:200] }}
+                                            {% if evaluation.llm_response.response|length > 200 %}...{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Rating Breakdown -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <h6>Rating Breakdown:</h6>
+                                        <div class="row">
+                                            <div class="col-md-2">
+                                                <small class="text-muted">Helpfulness</small><br>
+                                                <div class="rating-stars">
+                                                    {% for i in range(1, 6) %}
+                                                        <i data-feather="star" class="star {% if i <= evaluation.helpfulness %}filled{% endif %}" style="width: 14px; height: 14px;"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <small class="text-muted">Correctness</small><br>
+                                                <div class="rating-stars">
+                                                    {% for i in range(1, 6) %}
+                                                        <i data-feather="star" class="star {% if i <= evaluation.correctness %}filled{% endif %}" style="width: 14px; height: 14px;"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <small class="text-muted">Coherence</small><br>
+                                                <div class="rating-stars">
+                                                    {% for i in range(1, 6) %}
+                                                        <i data-feather="star" class="star {% if i <= evaluation.coherence %}filled{% endif %}" style="width: 14px; height: 14px;"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <small class="text-muted">Empathy</small><br>
+                                                <div class="rating-stars">
+                                                    {% for i in range(1, 6) %}
+                                                        <i data-feather="star" class="star {% if i <= evaluation.empathy_tone %}filled{% endif %}" style="width: 14px; height: 14px;"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <small class="text-muted">Safety</small><br>
+                                                <div class="rating-stars">
+                                                    {% for i in range(1, 6) %}
+                                                        <i data-feather="star" class="star {% if i <= evaluation.safety %}filled{% endif %}" style="width: 14px; height: 14px;"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <small class="text-muted">Overall</small><br>
+                                                <div class="rating-stars">
+                                                    {% for i in range(1, 6) %}
+                                                        <i data-feather="star" class="star {% if i <= evaluation.overall_rating %}filled{% endif %}" style="width: 14px; height: 14px;"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Feedback Details -->
+                                <div class="row">
+                                    {% if evaluation.evaluator_notes %}
+                                    <div class="col-md-6 mb-2">
+                                        <small class="text-muted fw-bold">Evaluator Notes:</small>
+                                        <div class="small">{{ evaluation.evaluator_notes }}</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if evaluation.improvement_suggestions %}
+                                    <div class="col-md-6 mb-2">
+                                        <small class="text-muted fw-bold">Improvement Suggestions:</small>
+                                        <div class="small">{{ evaluation.improvement_suggestions }}</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if evaluation.safety_concerns %}
+                                    <div class="col-md-6 mb-2">
+                                        <small class="text-muted fw-bold">Safety Concerns:</small>
+                                        <div class="small text-warning">{{ evaluation.safety_concerns }}</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if evaluation.hallucination_flags %}
+                                    <div class="col-md-6 mb-2">
+                                        <small class="text-muted fw-bold">Hallucination Flags:</small>
+                                        <div class="small text-danger">{{ evaluation.hallucination_flags }}</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i data-feather="inbox" class="text-muted mb-3" style="width: 64px; height: 64px;"></i>
+                            <h5 class="text-muted">No evaluations completed yet</h5>
+                            <p class="text-muted">Start evaluating LLM responses to see detailed results here.</p>
+                            <a href="{{ url_for('evaluate', session_id=session.id) }}" class="btn btn-primary">
+                                <i data-feather="play" class="me-2"></i>
+                                Start Evaluating
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers for expandable response previews
+    const responsePreviews = document.querySelectorAll('.response-preview');
+    responsePreviews.forEach(preview => {
+        if (preview.textContent.includes('...')) {
+            preview.style.cursor = 'pointer';
+            preview.title = 'Click to expand';
+            
+            preview.addEventListener('click', function() {
+                // Toggle expanded view
+                if (this.classList.contains('expanded')) {
+                    // Collapse
+                    const originalText = this.dataset.originalText;
+                    this.textContent = originalText.substring(0, 200) + '...';
+                    this.classList.remove('expanded');
+                } else {
+                    // Expand
+                    this.dataset.originalText = this.textContent;
+                    // Get full text from the evaluation data
+                    const fullText = this.closest('.evaluation-card').dataset.fullResponse;
+                    if (fullText) {
+                        this.textContent = fullText;
+                    }
+                    this.classList.add('expanded');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

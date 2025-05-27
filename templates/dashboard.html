@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluation Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>
+                        <i data-feather="bar-chart-2" class="me-2"></i>
+                        Evaluation Dashboard
+                    </h2>
+                    <p class="text-muted mb-0">Overview of all evaluation sessions and their progress</p>
+                </div>
+                <a href="{{ url_for('start_session') }}" class="btn btn-primary">
+                    <i data-feather="plus-circle" class="me-2"></i>
+                    New Session
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i data-feather="users" class="text-primary mb-2" style="width: 32px; height: 32px;"></i>
+                    <h4 class="card-title">{{ sessions|length }}</h4>
+                    <p class="card-text text-muted">Total Sessions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i data-feather="check-circle" class="text-success mb-2" style="width: 32px; height: 32px;"></i>
+                    <h4 class="card-title">{{ sessions|selectattr('status', 'equalto', 'completed')|list|length }}</h4>
+                    <p class="card-text text-muted">Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i data-feather="clock" class="text-warning mb-2" style="width: 32px; height: 32px;"></i>
+                    <h4 class="card-title">{{ sessions|selectattr('status', 'equalto', 'in_progress')|list|length }}</h4>
+                    <p class="card-text text-muted">In Progress</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i data-feather="edit-3" class="text-info mb-2" style="width: 32px; height: 32px;"></i>
+                    <h4 class="card-title">
+                        {% set total_evaluations = sessions|sum(attribute='evaluations')|length %}
+                        {{ total_evaluations }}
+                    </h4>
+                    <p class="card-text text-muted">Total Evaluations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions Table -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="list" class="me-2"></i>
+                        All Evaluation Sessions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if sessions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="sessionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Session ID</th>
+                                        <th>Evaluator</th>
+                                        <th>Created</th>
+                                        <th>Status</th>
+                                        <th>Evaluations</th>
+                                        <th>Avg Rating</th>
+                                        <th>Risk Level</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for session in sessions %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-secondary">#{{ session.id }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i data-feather="user" class="me-2" style="width: 16px; height: 16px;"></i>
+                                                {{ session.evaluator_name }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <small>{{ session.created_at.strftime('%Y-%m-%d') }}</small><br>
+                                            <small class="text-muted">{{ session.created_at.strftime('%H:%M') }}</small>
+                                        </td>
+                                        <td>
+                                            {% if session.status == 'completed' %}
+                                                <span class="badge bg-success">
+                                                    <i data-feather="check" style="width: 12px; height: 12px;"></i>
+                                                    Completed
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i data-feather="clock" style="width: 12px; height: 12px;"></i>
+                                                    In Progress
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ session.evaluations|length }}</span>
+                                        </td>
+                                        <td>
+                                            {% if session.evaluations %}
+                                                {% set avg_rating = (session.evaluations|sum(attribute='average_rating') / session.evaluations|length)|round(1) %}
+                                                <div class="d-flex align-items-center">
+                                                    {% if avg_rating >= 4 %}
+                                                        <i data-feather="star" class="text-success me-1" style="width: 16px; height: 16px;"></i>
+                                                    {% elif avg_rating >= 3 %}
+                                                        <i data-feather="star" class="text-warning me-1" style="width: 16px; height: 16px;"></i>
+                                                    {% else %}
+                                                        <i data-feather="star" class="text-danger me-1" style="width: 16px; height: 16px;"></i>
+                                                    {% endif %}
+                                                    {{ avg_rating }}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if session.evaluations %}
+                                                {% set high_risk_count = session.evaluations|selectattr('risk_level', 'equalto', 'high')|list|length %}
+                                                {% if high_risk_count > 0 %}
+                                                    <span class="badge bg-danger">
+                                                        <i data-feather="alert-triangle" style="width: 12px; height: 12px;"></i>
+                                                        High ({{ high_risk_count }})
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-success">
+                                                        <i data-feather="shield" style="width: 12px; height: 12px;"></i>
+                                                        Safe
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('session_detail', session_id=session.id) }}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i data-feather="eye" style="width: 14px; height: 14px;"></i>
+                                                </a>
+                                                {% if session.status == 'in_progress' %}
+                                                    <a href="{{ url_for('evaluate', session_id=session.id) }}" 
+                                                       class="btn btn-outline-success" title="Continue Evaluation">
+                                                        <i data-feather="play" style="width: 14px; height: 14px;"></i>
+                                                    </a>
+                                                {% endif %}
+                                                <a href="{{ url_for('export_session', session_id=session.id) }}" 
+                                                   class="btn btn-outline-secondary" title="Export Data">
+                                                    <i data-feather="download" style="width: 14px; height: 14px;"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i data-feather="inbox" class="text-muted mb-3" style="width: 64px; height: 64px;"></i>
+                            <h5 class="text-muted">No evaluation sessions yet</h5>
+                            <p class="text-muted">Start your first evaluation session to begin analyzing LLM outputs.</p>
+                            <a href="{{ url_for('start_session') }}" class="btn btn-primary">
+                                <i data-feather="plus-circle" class="me-2"></i>
+                                Create First Session
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add table sorting functionality
+    const table = document.getElementById('sessionsTable');
+    if (table) {
+        // Simple table sorting by clicking headers
+        const headers = table.querySelectorAll('th');
+        headers.forEach((header, index) => {
+            if (index < 6) { // Only make first 6 columns sortable
+                header.style.cursor = 'pointer';
+                header.addEventListener('click', function() {
+                    sortTable(table, index);
+                });
+            }
+        });
+    }
+});
+
+function sortTable(table, column) {
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        const aVal = a.cells[column].textContent.trim();
+        const bVal = b.cells[column].textContent.trim();
+        
+        // Try to parse as numbers
+        const aNum = parseFloat(aVal);
+        const bNum = parseFloat(bVal);
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            return aNum - bNum;
+        }
+        
+        // Sort as strings
+        return aVal.localeCompare(bVal);
+    });
+    
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+}
+</script>
+{% endblock %}

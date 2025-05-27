@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}LLM Feedback Engine - Home{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 fw-bold mb-3">
+                <i data-feather="cpu" class="me-3"></i>
+                LLM Feedback Engine
+            </h1>
+            <p class="lead text-muted mb-4">
+                Human-in-the-Loop Evaluation Framework for Large Language Models
+            </p>
+            <p class="mb-4">
+                A simulation of real-world AI Tutor workflows, built for xAI alignment. 
+                Enable human evaluators to review, analyze, and provide structured feedback 
+                on outputs from large language models.
+            </p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a href="{{ url_for('start_session') }}" class="btn btn-primary btn-lg">
+                    <i data-feather="play" class="me-2"></i>
+                    Start New Evaluation
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                    <i data-feather="bar-chart-2" class="me-2"></i>
+                    View Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="users" class="text-primary mb-3" style="width: 48px; height: 48px;"></i>
+                    <h3 class="card-title">{{ total_sessions }}</h3>
+                    <p class="card-text text-muted">Evaluation Sessions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="check-square" class="text-success mb-3" style="width: 48px; height: 48px;"></i>
+                    <h3 class="card-title">{{ total_evaluations }}</h3>
+                    <p class="card-text text-muted">Completed Evaluations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="shield" class="text-warning mb-3" style="width: 48px; height: 48px;"></i>
+                    <h3 class="card-title">Safety Focus</h3>
+                    <p class="card-text text-muted">Risk Assessment</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Capabilities -->
+    <div class="row mb-5">
+        <div class="col-lg-12">
+            <h2 class="text-center mb-4">Core Capabilities</h2>
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="card h-100 capability-card">
+                        <div class="card-body text-center">
+                            <div class="capability-icon mb-3">
+                                <i data-feather="target" class="text-primary" style="width: 48px; height: 48px;"></i>
+                            </div>
+                            <h5 class="card-title">Multi-Criteria Assessment</h5>
+                            <p class="card-text mb-3">
+                                Comprehensive evaluation across 5 critical dimensions with nuanced scoring
+                            </p>
+                            <div class="capability-list">
+                                <span class="badge bg-primary me-1 mb-1">Helpfulness</span>
+                                <span class="badge bg-primary me-1 mb-1">Correctness</span>
+                                <span class="badge bg-primary me-1 mb-1">Coherence</span>
+                                <span class="badge bg-primary me-1 mb-1">Empathy</span>
+                                <span class="badge bg-danger me-1 mb-1">Safety Risk</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div class="card h-100 capability-card">
+                        <div class="card-body text-center">
+                            <div class="capability-icon mb-3">
+                                <i data-feather="message-square" class="text-success" style="width: 48px; height: 48px;"></i>
+                            </div>
+                            <h5 class="card-title">Structured Feedback</h5>
+                            <p class="card-text mb-3">
+                                Rich, contextual feedback with AI safety and alignment focus
+                            </p>
+                            <div class="capability-list">
+                                <span class="badge bg-success me-1 mb-1">Detailed Notes</span>
+                                <span class="badge bg-success me-1 mb-1">Improvements</span>
+                                <span class="badge bg-warning me-1 mb-1">Safety Flags</span>
+                                <span class="badge bg-danger me-1 mb-1">Hallucinations</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div class="card h-100 capability-card">
+                        <div class="card-body text-center">
+                            <div class="capability-icon mb-3">
+                                <i data-feather="trending-up" class="text-info" style="width: 48px; height: 48px;"></i>
+                            </div>
+                            <h5 class="card-title">Analytics & Insights</h5>
+                            <p class="card-text mb-3">
+                                Track evaluation patterns and model performance over time
+                            </p>
+                            <div class="capability-list">
+                                <span class="badge bg-info me-1 mb-1">Session Tracking</span>
+                                <span class="badge bg-info me-1 mb-1">Risk Analysis</span>
+                                <span class="badge bg-info me-1 mb-1">Quality Metrics</span>
+                                <span class="badge bg-info me-1 mb-1">Export Data</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Highlights -->
+    <div class="row mb-5">
+        <div class="col-lg-12">
+            <h2 class="text-center mb-4">Why Choose Our Platform?</h2>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="feature-highlight d-flex align-items-center">
+                        <div class="feature-icon me-3">
+                            <i data-feather="shield" class="text-success" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">AI Safety Focused</h6>
+                            <small class="text-muted">Built specifically for xAI alignment research and safety evaluation</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="feature-highlight d-flex align-items-center">
+                        <div class="feature-icon me-3">
+                            <i data-feather="zap" class="text-warning" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Real-time Evaluation</h6>
+                            <small class="text-muted">Instant feedback with intelligent form validation and auto-save</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="feature-highlight d-flex align-items-center">
+                        <div class="feature-icon me-3">
+                            <i data-feather="users" class="text-primary" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Human-in-the-Loop</h6>
+                            <small class="text-muted">Collaborative evaluation mimicking real-world AI tutor workflows</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="feature-highlight d-flex align-items-center">
+                        <div class="feature-icon me-3">
+                            <i data-feather="download" class="text-info" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Export & Analytics</h6>
+                            <small class="text-muted">Comprehensive data export for further analysis and reporting</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Sessions -->
+    {% if recent_sessions %}
+    <div class="row">
+        <div class="col-lg-12">
+            <h2 class="mb-4">Recent Evaluation Sessions</h2>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Evaluator</th>
+                            <th>Created</th>
+                            <th>Status</th>
+                            <th>Evaluations</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in recent_sessions %}
+                        <tr>
+                            <td>
+                                <i data-feather="user" class="me-2" style="width: 16px; height: 16px;"></i>
+                                {{ session.evaluator_name }}
+                            </td>
+                            <td>{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if session.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% else %}
+                                    <span class="badge bg-warning">In Progress</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ session.evaluations|length }}</td>
+                            <td>
+                                <a href="{{ url_for('session_detail', session_id=session.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i data-feather="eye" style="width: 16px; height: 16px;"></i>
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                    View All Sessions
+                    <i data-feather="arrow-right" class="ms-2" style="width: 16px; height: 16px;"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

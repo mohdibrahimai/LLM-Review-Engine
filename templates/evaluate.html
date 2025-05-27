@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if session %}
+    Evaluation Session - {{ session.evaluator_name }}
+{% else %}
+    Start New Evaluation Session
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if not session %}
+        <!-- Start New Session Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            <i data-feather="play" class="me-2"></i>
+                            Start New Evaluation Session
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('start_session') }}">
+                            {{ form.hidden_tag() }}
+                            
+                            <div class="mb-3">
+                                {{ form.evaluator_name.label(class="form-label") }}
+                                {{ form.evaluator_name(class="form-control") }}
+                                {% if form.evaluator_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.evaluator_name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i data-feather="arrow-right" class="me-2"></i>
+                                    Begin Evaluation
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Evaluation Interface -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>
+                            <i data-feather="user" class="me-2"></i>
+                            {{ session.evaluator_name }}'s Evaluation Session
+                        </h2>
+                        <p class="text-muted mb-0">
+                            Session #{{ session.id }} • Started {{ session.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </p>
+                    </div>
+                    <div class="btn-group">
+                        <a href="{{ url_for('session_detail', session_id=session.id) }}" 
+                           class="btn btn-outline-secondary">
+                            <i data-feather="eye" class="me-2"></i>
+                            View Session
+                        </a>
+                        <a href="{{ url_for('complete_session', session_id=session.id) }}" 
+                           class="btn btn-success">
+                            <i data-feather="check" class="me-2"></i>
+                            Complete Session
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if response %}
+        <div class="row">
+            <!-- LLM Response Display -->
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i data-feather="message-circle" class="me-2"></i>
+                            LLM Response to Evaluate
+                        </h5>
+                        <small class="text-muted">Model: {{ response.model_name }}</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Prompt:</label>
+                            <div class="p-3 bg-body-secondary rounded">
+                                {{ response.prompt }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Response:</label>
+                            <div class="p-3 bg-body-tertiary rounded response-text">
+                                {{ response.response|replace('\n', '<br>')|safe }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evaluation Form -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i data-feather="edit-3" class="me-2"></i>
+                            Evaluation Form
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('submit_evaluation') }}" id="evaluationForm">
+                            {{ form.hidden_tag() }}
+                            {{ form.session_id(value=session.id) }}
+                            {{ form.response_id(value=response.id) }}
+                            
+                            <!-- Rating Criteria -->
+                            <h6 class="mb-3">
+                                <i data-feather="star" class="me-2"></i>
+                                Rating Criteria (1-5 Scale)
+                            </h6>
+                            
+                            <div class="rating-section mb-4">
+                                <div class="row mb-3">
+                                    <div class="col-lg-6">
+                                        <div class="rating-field">
+                                            {{ form.helpfulness.label(class="form-label fw-semibold") }}
+                                            <small class="text-muted d-block mb-2">How useful is this response to the user?</small>
+                                            {{ form.helpfulness(class="form-select rating-select", **{"data-rating-type": "helpfulness"}) }}
+                                            <div class="rating-visual mt-2" data-rating="helpfulness"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="rating-field">
+                                            {{ form.correctness.label(class="form-label fw-semibold") }}
+                                            <small class="text-muted d-block mb-2">How factually accurate is the information?</small>
+                                            {{ form.correctness(class="form-select rating-select", **{"data-rating-type": "correctness"}) }}
+                                            <div class="rating-visual mt-2" data-rating="correctness"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-lg-6">
+                                        <div class="rating-field">
+                                            {{ form.coherence.label(class="form-label fw-semibold") }}
+                                            <small class="text-muted d-block mb-2">How well-structured and logical is the response?</small>
+                                            {{ form.coherence(class="form-select rating-select", **{"data-rating-type": "coherence"}) }}
+                                            <div class="rating-visual mt-2" data-rating="coherence"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="rating-field">
+                                            {{ form.empathy_tone.label(class="form-label fw-semibold") }}
+                                            <small class="text-muted d-block mb-2">How appropriate is the emotional tone?</small>
+                                            {{ form.empathy_tone(class="form-select rating-select", **{"data-rating-type": "empathy"}) }}
+                                            <div class="rating-visual mt-2" data-rating="empathy"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-lg-6">
+                                        <div class="rating-field safety-rating">
+                                            {{ form.safety.label(class="form-label fw-semibold text-warning") }}
+                                            <small class="text-muted d-block mb-2">
+                                                <i data-feather="shield" style="width: 14px; height: 14px;"></i>
+                                                Risk of harmful or dangerous content
+                                            </small>
+                                            {{ form.safety(class="form-select rating-select safety-select", **{"data-rating-type": "safety"}) }}
+                                            <div class="rating-visual mt-2" data-rating="safety"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="rating-field">
+                                            {{ form.overall_rating.label(class="form-label fw-semibold") }}
+                                            <small class="text-muted d-block mb-2">Overall quality assessment (auto-calculated)</small>
+                                            {{ form.overall_rating(class="form-select rating-select overall-rating", **{"data-rating-type": "overall", "readonly": "readonly"}) }}
+                                            <div class="rating-visual mt-2" data-rating="overall"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Average Rating Display -->
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="average-rating-display p-3 bg-body-secondary rounded">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="fw-semibold">Average Rating:</span>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="average-score me-2 h5 mb-0">-</span>
+                                                    <div class="rating-stars-large" id="averageStars"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <!-- Detailed Feedback -->
+                            <h6 class="mb-3">
+                                <i data-feather="edit" class="me-2"></i>
+                                Detailed Feedback & Analysis
+                            </h6>
+                            
+                            <div class="feedback-section">
+                                <div class="row">
+                                    <div class="col-lg-6 mb-3">
+                                        <div class="feedback-field">
+                                            {{ form.evaluator_notes.label(class="form-label fw-semibold") }}
+                                            <small class="text-muted d-block mb-2">
+                                                <i data-feather="clipboard" style="width: 14px; height: 14px;"></i>
+                                                Overall assessment and key observations
+                                            </small>
+                                            {{ form.evaluator_notes(class="form-control feedback-textarea") }}
+                                            <div class="text-count mt-1">
+                                                <small class="text-muted">
+                                                    <span class="char-count">0</span>/2000 characters
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 mb-3">
+                                        <div class="feedback-field">
+                                            {{ form.improvement_suggestions.label(class="form-label fw-semibold") }}
+                                            <small class="text-muted d-block mb-2">
+                                                <i data-feather="trending-up" style="width: 14px; height: 14px;"></i>
+                                                Specific recommendations for enhancement
+                                            </small>
+                                            {{ form.improvement_suggestions(class="form-control feedback-textarea") }}
+                                            <div class="text-count mt-1">
+                                                <small class="text-muted">
+                                                    <span class="char-count">0</span>/2000 characters
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-lg-6 mb-3">
+                                        <div class="feedback-field safety-feedback">
+                                            {{ form.safety_concerns.label(class="form-label fw-semibold text-warning") }}
+                                            <small class="text-muted d-block mb-2">
+                                                <i data-feather="alert-triangle" style="width: 14px; height: 14px;"></i>
+                                                Safety, ethical, or harmful content concerns
+                                            </small>
+                                            {{ form.safety_concerns(class="form-control feedback-textarea") }}
+                                            <div class="text-count mt-1">
+                                                <small class="text-muted">
+                                                    <span class="char-count">0</span>/2000 characters
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 mb-3">
+                                        <div class="feedback-field hallucination-feedback">
+                                            {{ form.hallucination_flags.label(class="form-label fw-semibold text-danger") }}
+                                            <small class="text-muted d-block mb-2">
+                                                <i data-feather="alert-circle" style="width: 14px; height: 14px;"></i>
+                                                Factual errors, false claims, or made-up information
+                                            </small>
+                                            {{ form.hallucination_flags(class="form-control feedback-textarea") }}
+                                            <div class="text-count mt-1">
+                                                <small class="text-muted">
+                                                    <span class="char-count">0</span>/2000 characters
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="revision-section mt-4 p-3 bg-body-secondary rounded">
+                                    <div class="form-check">
+                                        {{ form.requires_revision(class="form-check-input") }}
+                                        {{ form.requires_revision.label(class="form-check-label fw-semibold") }}
+                                        <small class="text-muted d-block mt-1">
+                                            Check this if the response needs significant improvement before deployment
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Indicator -->
+                            <div class="progress-indicator mb-3">
+                                <div class="progress-bar" style="width: 0%;"></div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary" onclick="loadDemo()">
+                                    <i data-feather="play" class="me-2"></i>
+                                    Load Demo
+                                </button>
+                                <button type="reset" class="btn btn-outline-warning">
+                                    <i data-feather="refresh-cw" class="me-2"></i>
+                                    Clear Form
+                                </button>
+                                <button type="submit" class="btn btn-primary flex-fill submit-btn">
+                                    <i data-feather="send" class="me-2"></i>
+                                    Submit Evaluation
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+            <div class="text-center">
+                <div class="alert alert-info">
+                    <i data-feather="info" class="me-2"></i>
+                    No more responses available for evaluation in this session.
+                </div>
+                <a href="{{ url_for('session_detail', session_id=session.id) }}" class="btn btn-primary">
+                    <i data-feather="eye" class="me-2"></i>
+                    View Session Results
+                </a>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load Demo Data Function
+function loadDemo() {
+    // Pre-fill with realistic example data
+    document.querySelector('select[name="helpfulness"]').value = '4';
+    document.querySelector('select[name="correctness"]').value = '4';
+    document.querySelector('select[name="coherence"]').value = '5';
+    document.querySelector('select[name="empathy_tone"]').value = '5';
+    document.querySelector('select[name="safety"]').value = '2';
+    document.querySelector('select[name="overall_rating"]').value = '4';
+    
+    document.querySelector('textarea[name="evaluator_notes"]').value = 'Response provides good practical advice with empathetic tone. The breathing techniques and visualization suggestions are appropriate for anxiety management. However, it could benefit from more specific techniques and professional disclaimers.';
+    
+    document.querySelector('textarea[name="improvement_suggestions"]').value = 'Add specific breathing exercises (e.g., 4-7-8 technique), include references to professional resources, and structure advice with numbered steps for easier implementation.';
+    
+    document.querySelector('textarea[name="safety_concerns"]').value = 'While generally safe, the response doesn\'t acknowledge when professional help might be needed for severe anxiety. Could benefit from disclaimer about seeking therapy for persistent issues.';
+    
+    document.querySelector('textarea[name="hallucination_flags"]').value = 'No factual inaccuracies detected. Advice aligns with established anxiety management techniques.';
+    
+    document.querySelector('input[name="requires_revision"]').checked = false;
+    
+    // Trigger rating visuals update
+    document.querySelectorAll('.rating-select').forEach(select => {
+        if (select.value) {
+            select.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Show success message
+    showToast('Demo data loaded successfully!', 'success');
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove toast after it's hidden
+    toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+    });
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '1050';
+    document.body.appendChild(container);
+    return container;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add form validation feedback
+    const form = document.getElementById('evaluationForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Basic validation - ensure all rating fields are selected
+            const ratingFields = ['helpfulness', 'correctness', 'coherence', 'empathy_tone', 'safety', 'overall_rating'];
+            let isValid = true;
+            
+            ratingFields.forEach(function(fieldName) {
+                const field = document.getElementById(fieldName);
+                if (field && !field.value) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                } else if (field) {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                showToast('Please complete all rating criteria before submitting.', 'warning');
+            } else {
+                showToast('Evaluation submitted successfully!', 'success');
+            }
+        });
+        
+        // Reset form handler
+        form.addEventListener('reset', function() {
+            setTimeout(() => {
+                // Clear visual ratings
+                document.querySelectorAll('.rating-visual').forEach(visual => {
+                    visual.innerHTML = '';
+                    for (let i = 1; i <= 5; i++) {
+                        const star = document.createElement('i');
+                        star.setAttribute('data-feather', 'star');
+                        star.className = 'rating-star';
+                        visual.appendChild(star);
+                    }
+                });
+                
+                // Reset average display
+                const averageScore = document.querySelector('.average-score');
+                const averageDisplay = document.querySelector('.average-rating-display');
+                if (averageScore) averageScore.textContent = '-';
+                if (averageDisplay) averageDisplay.classList.remove('active');
+                
+                // Reset progress bar
+                const progressBar = document.querySelector('.progress-bar');
+                if (progressBar) progressBar.style.width = '0%';
+                
+                // Re-initialize feather icons
+                if (window.feather) feather.replace();
+                
+                showToast('Form cleared successfully!', 'info');
+            }, 50);
+        });
+    }
+    
+    // Safety rating color coding
+    const safetySelect = document.getElementById('safety');
+    if (safetySelect) {
+        safetySelect.addEventListener('change', function() {
+            const value = parseInt(this.value);
+            this.classList.remove('text-danger', 'text-warning', 'text-success');
+            
+            if (value <= 2) {
+                this.classList.add('text-danger');
+            } else if (value <= 3) {
+                this.classList.add('text-warning');
+            } else {
+                this.classList.add('text-success');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
