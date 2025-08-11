@@ -1,4 +1,4 @@
-# 🧠 LLM Review Engine
+# 🧠 Language Model Quality Auditor
 
 A comprehensive human-in-the-loop evaluation platform for Large Language Models, built for AI alignment and safety research. This Flask-based application enables human evaluators to provide structured feedback on LLM outputs across multiple quality dimensions.
 
